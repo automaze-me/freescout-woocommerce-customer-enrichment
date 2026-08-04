@@ -32,6 +32,17 @@ class WooCommerceCustomerEnrichmentServiceProvider extends ServiceProvider
      */
     public function hooks()
     {
+        // Render our enrichment line items: core's getActionText() returns ''
+        // for a NULL action_type, so return the pre-translated body instead.
+        \Eventy::addFilter('thread.action_text', function ($did_this, $thread, $conversation_number, $escape, $viewed_by_user) {
+            if ((int) $thread->type === \App\Thread::TYPE_LINEITEM
+                && $thread->getMeta(\Modules\WooCommerceCustomerEnrichment\Services\EnrichmentLineItem::LINEITEM_META)
+            ) {
+                return $thread->body;
+            }
+
+            return $did_this;
+        }, 20, 5);
     }
 
     public function register()
