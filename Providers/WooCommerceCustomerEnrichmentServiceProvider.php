@@ -1,0 +1,63 @@
+<?php
+
+namespace Modules\WooCommerceCustomerEnrichment\Providers;
+
+use Illuminate\Support\ServiceProvider;
+
+// Module alias.
+define('WCCE_MODULE', 'woocommercecustomerenrichment');
+
+class WooCommerceCustomerEnrichmentServiceProvider extends ServiceProvider
+{
+    protected $defer = false;
+
+    public function boot()
+    {
+        $this->registerViews();
+
+        // Companion module: everything requires the official WooCommerce
+        // module (credentials, API client, cache). Without it, register nothing.
+        if (!\Module::isActive('woocommerce')) {
+            return;
+        }
+
+        $this->hooks();
+    }
+
+    /**
+     * Module hooks. Filled by later tasks:
+     * - thread.action_text filter (line item rendering)
+     * - conversation.* triggers dispatching the EnrichCustomer job
+     * - settings.* filters (settings section)
+     */
+    public function hooks()
+    {
+    }
+
+    public function register()
+    {
+        $this->registerTranslations();
+    }
+
+    public function registerViews()
+    {
+        $viewPath = resource_path('views/modules/woocommercecustomerenrichment');
+        $sourcePath = __DIR__.'/../Resources/views';
+
+        $this->publishes([$sourcePath => $viewPath], 'views');
+
+        $this->loadViewsFrom(array_merge(array_map(function ($path) {
+            return $path.'/modules/woocommercecustomerenrichment';
+        }, \Config::get('view.paths')), [$sourcePath]), 'woocommercecustomerenrichment');
+    }
+
+    public function registerTranslations()
+    {
+        $this->loadJsonTranslationsFrom(__DIR__.'/../Resources/lang');
+    }
+
+    public function provides()
+    {
+        return [];
+    }
+}

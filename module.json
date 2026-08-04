@@ -1,15 +1,20 @@
 {
-    "name": "WooCommerceCustomerEnrichment",
+    "name": "WooCommerce Customer Enrichment",
     "alias": "woocommercecustomerenrichment",
-    "description": "",
+    "description": "Automatically fills customer profiles (phone, alternate email, name, address) from WooCommerce order billing data, including orders referenced by number in the message subject or body.",
     "version": "1.0.0",
-    "detailsUrl": "",
-    "author": "",
-    "authorUrl": "",
-    "requiredAppVersion": "1.0.2",
-    "license": "AGPL-3.0",
-    "keywords": [],
-    "active": 0,
+    "author": "Jörn Bungartz - automaze.me",
+    "authorUrl": "https://automaze.me",
+    "detailsUrl": "https://github.com/automaze-me/freescout-woocommerce-customer-enrichment",
+    "latestVersionUrl": "https://raw.githubusercontent.com/automaze-me/freescout-woocommerce-customer-enrichment/refs/heads/main/module.json",
+    "latestVersionZipUrl": "https://github.com/automaze-me/freescout-woocommerce-customer-enrichment/releases/latest/download/WooCommerceCustomerEnrichment.zip",
+    "requiredAppVersion": "1.8.215",
+    "requiredModules": {
+        "woocommerce": "1.0.16"
+    },
+    "license": "MIT",
+    "keywords": ["woocommerce", "customer", "enrichment", "phone", "orders"],
+    "active": 1,
     "order": 0,
     "providers": [
         "Modules\\WooCommerceCustomerEnrichment\\Providers\\WooCommerceCustomerEnrichmentServiceProvider"
