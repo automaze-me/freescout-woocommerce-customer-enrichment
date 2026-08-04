@@ -25,8 +25,9 @@ class WooCommerceCustomerEnrichmentServiceProvider extends ServiceProvider
     }
 
     /**
-     * Module hooks. Filled by later tasks:
-     * - thread.action_text filter (line item rendering)
+     * Module hooks.
+     * - thread.action_text filter (line item rendering) — in place.
+     * Filled by later tasks:
      * - conversation.* triggers dispatching the EnrichCustomer job
      * - settings.* filters (settings section)
      */
@@ -47,6 +48,10 @@ class WooCommerceCustomerEnrichmentServiceProvider extends ServiceProvider
 
     public function register()
     {
+        $this->commands([
+            \Modules\WooCommerceCustomerEnrichment\Console\EnrichConversation::class,
+        ]);
+
         $this->registerTranslations();
     }
 
