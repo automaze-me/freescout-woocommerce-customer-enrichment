@@ -13,6 +13,7 @@ class WooCommerceCustomerEnrichmentServiceProvider extends ServiceProvider
 
     public function boot()
     {
+        $this->registerConfig();
         $this->registerViews();
 
         // Companion module: everything requires the official WooCommerce
@@ -109,6 +110,19 @@ class WooCommerceCustomerEnrichmentServiceProvider extends ServiceProvider
 
             return $request;
         }, 20, 3);
+    }
+
+    /**
+     * Register config.
+     */
+    protected function registerConfig()
+    {
+        $this->publishes([
+            __DIR__.'/../Config/config.php' => config_path('woocommercecustomerenrichment.php'),
+        ], 'config');
+        $this->mergeConfigFrom(
+            __DIR__.'/../Config/config.php', 'woocommercecustomerenrichment'
+        );
     }
 
     public function register()
