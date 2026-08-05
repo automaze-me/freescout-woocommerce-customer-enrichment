@@ -6,7 +6,7 @@ A companion module for the official [WooCommerce](https://freescout.net/module/w
 
 - FreeScout 1.8.215 or later.
 - The official **WooCommerce** module (1.0.16 or later) installed, **active**, and configured with API credentials (either globally or per mailbox). Without it active, this module registers nothing at all.
-- A running queue worker (`php artisan queue:work` or your usual supervisor setup). Enrichment happens in a queued job, not inline, so nothing is filled in if the queue isn't being processed.
+- Nothing else. Enrichment runs through FreeScout's standard background processing, which every working FreeScout installation already has (it is the same mechanism that sends your email).
 
 ## Installation
 

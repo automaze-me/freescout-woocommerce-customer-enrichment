@@ -35,6 +35,13 @@ class WooCommerceCustomerEnrichmentServiceProvider extends ServiceProvider
      */
     public function hooks()
     {
+        // Module CSS (keeps the long settings-menu label from wrapping
+        // raggedly under the sidebar icon).
+        \Eventy::addFilter('stylesheets', function ($styles) {
+            $styles[] = \Module::getPublicPath(WCCE_MODULE).'/css/module.css';
+            return $styles;
+        });
+
         // Render our enrichment line items: core's getActionText() returns ''
         // for a NULL action_type, so return the pre-translated body instead.
         \Eventy::addFilter('thread.action_text', function ($did_this, $thread, $conversation_number, $escape, $viewed_by_user) {
