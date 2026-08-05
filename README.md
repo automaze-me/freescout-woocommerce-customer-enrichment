@@ -39,9 +39,11 @@ Every change is recorded as a line item on the conversation ("Customer profile e
 
 As a safeguard, if an order's billing email already belongs to a *different* existing FreeScout customer, that email is not attached — FreeScout treats emails as unique per customer, and merging identities is not something this module decides on its own. The line item notes the match and which email was skipped, so an agent can decide whether the two customer records should be merged manually.
 
-## Manual command
+## Manual enrichment
 
-Enrichment normally runs automatically, but a single conversation can be (re-)processed by hand:
+Enrichment normally runs automatically, but it can also be triggered by hand — useful for tickets that existed before the module was installed, or right after you changed a customer's email address. In any conversation, open the customer's dropdown menu (the gear next to the customer name) and click **Enrich from WooCommerce**: the page reloads when new data was found, or tells you there was nothing new.
+
+The same can be done from the command line:
 
 ```bash
 php artisan wcce:enrich <conversation_id>
