@@ -14,6 +14,7 @@
     "Invalid order number pattern — keeping the previous value.": "Ungültiges Bestellnummern-Muster — der vorherige Wert bleibt erhalten.",
     "Customer profile enriched from WooCommerce order :orders": "Kundenprofil ergänzt aus WooCommerce-Bestellung :orders",
     "WooCommerce order :order matched, but :email belongs to another customer": "WooCommerce-Bestellung :order gefunden, aber :email gehört zu einem anderen Kunden",
+    "Name": "Name",
     "name": "Name",
     "address": "Adresse"
 }
