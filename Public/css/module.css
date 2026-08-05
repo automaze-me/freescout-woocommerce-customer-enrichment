@@ -1,8 +1,0 @@
-/* The settings sidebar renders "<icon> <a>title</a>" inline, so a long
-   section title wraps under the icon with a ragged left edge. Making the
-   link an inline-block keeps wrapped lines aligned under the text. */
-.sidebar-menu a[href*="/app-settings/woocommercecustomerenrichment"] {
-    display: inline-block;
-    vertical-align: top;
-    max-width: calc(100% - 24px);
-}

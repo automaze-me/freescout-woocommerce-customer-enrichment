@@ -1,5 +1,5 @@
 {
-    "WooCommerce Customer Enrichment": "WooCommerce-Kundenanreicherung",
+    "Customer Enrichment": "Kundenanreicherung",
     "Order Number Detection": "Bestellnummern-Erkennung",
     "Order number pattern": "Bestellnummern-Muster",
     "Regular expression (without delimiters, case-insensitive) with one capture group for the order number. Applied to the subject and body of incoming messages. Leave empty to use the built-in default.": "Regulärer Ausdruck (ohne Begrenzer, unabhängig von Groß-/Kleinschreibung) mit einer Erfassungsgruppe für die Bestellnummer. Wird auf Betreff und Text eingehender Nachrichten angewendet. Leer lassen für den eingebauten Standard.",
