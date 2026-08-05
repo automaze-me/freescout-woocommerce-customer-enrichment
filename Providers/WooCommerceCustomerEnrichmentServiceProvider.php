@@ -44,6 +44,28 @@ class WooCommerceCustomerEnrichmentServiceProvider extends ServiceProvider
 
             return $did_this;
         }, 20, 5);
+
+        // Automatic enrichment triggers. Cheap guards here; the job re-checks
+        // everything on fresh state when it runs.
+        $dispatch_enrichment = function ($conversation, $thread) {
+            if (!\WooCommerce::isApiEnabled() && !\WooCommerce::isMailboxApiEnabled($conversation->mailbox)) {
+                return;
+            }
+            \Modules\WooCommerceCustomerEnrichment\Jobs\EnrichCustomer::dispatch($conversation->id, $thread->id)
+                ->onQueue('default');
+        };
+
+        \Eventy::addAction('conversation.created_by_customer', function ($conversation, $thread, $customer) use ($dispatch_enrichment) {
+            $dispatch_enrichment($conversation, $thread);
+        }, 20, 3);
+
+        \Eventy::addAction('conversation.customer_replied', function ($conversation, $thread, $customer) use ($dispatch_enrichment) {
+            $dispatch_enrichment($conversation, $thread);
+        }, 20, 3);
+
+        \Eventy::addAction('conversation.created_by_user', function ($conversation, $thread) use ($dispatch_enrichment) {
+            $dispatch_enrichment($conversation, $thread);
+        }, 20, 2);
     }
 
     public function register()
