@@ -3,9 +3,8 @@
 namespace Modules\WooCommerceCustomerEnrichment\Console;
 
 use App\Conversation;
-use App\Thread;
 use Illuminate\Console\Command;
-use Modules\WooCommerceCustomerEnrichment\Jobs\EnrichCustomer;
+use Modules\WooCommerceCustomerEnrichment\Services\ConversationEnricher;
 
 class EnrichConversation extends Command
 {
@@ -22,22 +21,12 @@ class EnrichConversation extends Command
             return 1;
         }
 
-        $threads = collect([
-            $conversation->threads()->orderBy('created_at')->first(),
-            $conversation->threads()->where('type', Thread::TYPE_CUSTOMER)->orderBy('created_at', 'desc')->first(),
-        ])->filter()->unique('id');
-
-        if ($threads->isEmpty()) {
-            $this->error('Conversation has no threads');
-            return 1;
+        if (ConversationEnricher::enrich($conversation)) {
+            $this->info('Enrichment recorded changes — see the conversation line item.');
+        } else {
+            $this->info('Nothing new to enrich.');
         }
 
-        foreach ($threads as $thread) {
-            (new EnrichCustomer($conversation->id, $thread->id))->handle();
-            $this->line('Processed thread '.$thread->id);
-        }
-
-        $this->info('Done. Check the conversation for an enrichment line item (only added when something changed).');
         return 0;
     }
 }
