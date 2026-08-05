@@ -1,2 +1,5 @@
 <?php
-// WooCommerce Customer Enrichment has no routes.
+
+if (!app()->routesAreCached()) {
+    require __DIR__.'/Http/routes.php';
+}

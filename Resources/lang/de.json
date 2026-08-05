@@ -16,5 +16,9 @@
     "WooCommerce order :order matched, but :email belongs to another customer": "WooCommerce-Bestellung :order gefunden, aber :email gehört zu einem anderen Kunden",
     "Name": "Name",
     "name": "Name",
-    "address": "Adresse"
+    "address": "Adresse",
+    "Enrich from WooCommerce": "Aus WooCommerce anreichern",
+    "Customer profile updated from WooCommerce.": "Kundenprofil aus WooCommerce aktualisiert.",
+    "No new information found in WooCommerce.": "Keine neuen Informationen in WooCommerce gefunden.",
+    "WooCommerce API is not configured": "WooCommerce-API ist nicht konfiguriert"
 }

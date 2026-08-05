@@ -32,9 +32,29 @@ class WooCommerceCustomerEnrichmentServiceProvider extends ServiceProvider
      *   created_by_user) dispatching the EnrichCustomer job.
      * - settings.* filters wiring up the module's settings section
      *   (sections, view, section_settings, before_save validation).
+     * - javascripts filter + conversation.customer.menu action: the manual
+     *   "Enrich from WooCommerce" button.
      */
     public function hooks()
     {
+        // Add module's JS files to the application layout.
+        \Eventy::addFilter('javascripts', function ($javascripts) {
+            $javascripts[] = \Module::getPublicPath(WCCE_MODULE).'/js/laroute.js';
+            $javascripts[] = \Module::getPublicPath(WCCE_MODULE).'/js/module.js';
+            return $javascripts;
+        });
+
+        // Manual "Enrich from WooCommerce" item in the conversation's customer
+        // menu, right below the official module's "Recent Orders" (priority 12).
+        \Eventy::addAction('conversation.customer.menu', function ($customer, $conversation) {
+            if (!\WooCommerce::isApiEnabled() && !\WooCommerce::isMailboxApiEnabled($conversation->mailbox)) {
+                return;
+            }
+            ?>
+                <li role="presentation"><a href="#" class="wcce-enrich" data-conversation-id="<?php echo (int) $conversation->id; ?>" role="menuitem" tabindex="-1"><?php echo __("Enrich from WooCommerce") ?></a></li>
+            <?php
+        }, 13, 2);
+
         // Render our enrichment line items: core's getActionText() returns ''
         // for a NULL action_type, so return the pre-translated body instead.
         \Eventy::addFilter('thread.action_text', function ($did_this, $thread, $conversation_number, $escape, $viewed_by_user) {
