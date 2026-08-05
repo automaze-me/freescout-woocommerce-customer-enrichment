@@ -126,15 +126,15 @@ class EnrichCustomer implements ShouldQueue
         $plan = EnrichmentPlanner::plan($snapshot, $orders, $enrich, [\Helper::class, 'phoneToNumeric']);
 
         // ---- Apply.
-        $added         = []; // translated, escaped fragments for the line item
-        $skipped       = []; // ['email' =>, 'order' =>]
-        $order_numbers = []; // set of order numbers that contributed
+        $added        = []; // translated, escaped fragments for the line item
+        $skipped      = []; // ['email' =>, 'order' =>]
+        $added_orders = []; // set of order numbers that actually contributed to $added
 
         if ($plan['fields']) {
             $data = [];
             foreach ($plan['fields'] as $field => $item) {
                 $data[$field] = $item['value'];
-                $order_numbers[$item['order']] = true;
+                $added_orders[$item['order']] = true;
             }
             // Planner already picked only-empty fields; replace_data=false is
             // belt-and-braces against concurrent edits.
@@ -151,7 +151,7 @@ class EnrichCustomer implements ShouldQueue
         foreach ($plan['phones'] as $item) {
             $customer->addPhone($item['value']);
             $added[] = __('Phone').' '.e($item['value']);
-            $order_numbers[$item['order']] = true;
+            $added_orders[$item['order']] = true;
         }
 
         foreach ($plan['emails'] as $item) {
@@ -163,14 +163,17 @@ class EnrichCustomer implements ShouldQueue
             if ($existing) {
                 if ($existing->customer_id != $customer->id) {
                     // Never merge identities from a background job (spec D8).
+                    // Each skip line embeds its own order number directly, so
+                    // it does not need to feed $added_orders (spec/review: a
+                    // skip must never be credited as a contribution to the
+                    // "enriched from" line).
                     $skipped[] = ['email' => $sanitized, 'order' => $item['order']];
-                    $order_numbers[$item['order']] = true;
                 }
                 continue;
             }
             $customer->addEmail($sanitized);
             $added[] = __('Email').' '.e($sanitized);
-            $order_numbers[$item['order']] = true;
+            $added_orders[$item['order']] = true;
         }
 
         if ($customer->isDirty()) {
@@ -185,7 +188,7 @@ class EnrichCustomer implements ShouldQueue
         $lines = [];
         if ($added) {
             $lines[] = __('Customer profile enriched from WooCommerce order :orders', [
-                    'orders' => e('#'.implode(', #', array_keys($order_numbers))),
+                    'orders' => e('#'.implode(', #', array_keys($added_orders))),
                 ]).': '.implode(', ', $added);
         }
         foreach ($skipped as $skip) {
