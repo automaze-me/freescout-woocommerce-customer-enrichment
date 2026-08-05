@@ -20,5 +20,8 @@
     "Enrich from WooCommerce": "Aus WooCommerce anreichern",
     "Customer profile updated from WooCommerce.": "Kundenprofil aus WooCommerce aktualisiert.",
     "No new information found in WooCommerce.": "Keine neuen Informationen in WooCommerce gefunden.",
-    "WooCommerce API is not configured": "WooCommerce-API ist nicht konfiguriert"
+    "WooCommerce API is not configured": "WooCommerce-API ist nicht konfiguriert",
+    "Profile photo (Gravatar)": "Profilbild (Gravatar)",
+    "Set the profile photo from Gravatar when one exists for any customer email. Existing photos are never replaced. Email hashes are sent to gravatar.com.": "Profilbild von Gravatar setzen, wenn für eine der Kunden-E-Mail-Adressen eines existiert. Vorhandene Bilder werden nie ersetzt. E-Mail-Hashes werden an gravatar.com übertragen.",
+    "Profile photo added from Gravatar.": "Profilbild von Gravatar hinzugefügt."
 }

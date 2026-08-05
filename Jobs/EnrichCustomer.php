@@ -11,6 +11,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Modules\WooCommerceCustomerEnrichment\Services\EnrichmentLineItem;
+use Modules\WooCommerceCustomerEnrichment\Services\GravatarPhoto;
 use Modules\WooCommerceCustomerEnrichment\Services\EnrichmentPlanner;
 use Modules\WooCommerceCustomerEnrichment\Services\OrderNumberExtractor;
 use Modules\WooCommerceCustomerEnrichment\Services\WcApi;
@@ -67,6 +68,7 @@ class EnrichCustomer implements ShouldQueue
             'email'   => (bool) \Option::get(WCCE_MODULE.'.enrich_email', true),
             'name'    => (bool) \Option::get(WCCE_MODULE.'.enrich_name', true),
             'address' => (bool) \Option::get(WCCE_MODULE.'.enrich_address', true),
+            'photo'   => (bool) \Option::get(WCCE_MODULE.'.enrich_photo', true),
         ];
         if (!array_filter($enrich)) {
             return;
@@ -97,83 +99,87 @@ class EnrichCustomer implements ShouldQueue
             }
         }
 
-        if (!$orders) {
-            return;
-        }
-
-        // ---- Plan.
-        $snapshot = [
-            'first_name' => $customer->first_name,
-            'last_name'  => $customer->last_name,
-            'company'    => $customer->company,
-            'address'    => $customer->address,
-            'city'       => $customer->city,
-            'state'      => $customer->state,
-            'zip'        => $customer->zip,
-            'country'    => $customer->country,
-            'phones'     => [],
-            'emails'     => [],
-        ];
-        foreach ($customer->getPhones() as $phone) {
-            $snapshot['phones'][] = !empty($phone['n'])
-                ? (string) $phone['n']
-                : (string) \Helper::phoneToNumeric($phone['value'] ?? '');
-        }
-        foreach ($customer->emails_cached as $email_obj) {
-            $snapshot['emails'][] = mb_strtolower($email_obj->email);
-        }
-
-        $plan = EnrichmentPlanner::plan($snapshot, $orders, $enrich, [\Helper::class, 'phoneToNumeric']);
-
-        // ---- Apply.
+        // ---- Apply bookkeeping (shared by order data and the photo step).
         $added        = []; // translated, escaped fragments for the line item
         $skipped      = []; // ['email' =>, 'order' =>]
         $added_orders = []; // set of order numbers that actually contributed to $added
 
-        if ($plan['fields']) {
-            $data = [];
-            foreach ($plan['fields'] as $field => $item) {
-                $data[$field] = $item['value'];
+        if ($orders) {
+            // ---- Plan.
+            $snapshot = [
+                'first_name' => $customer->first_name,
+                'last_name'  => $customer->last_name,
+                'company'    => $customer->company,
+                'address'    => $customer->address,
+                'city'       => $customer->city,
+                'state'      => $customer->state,
+                'zip'        => $customer->zip,
+                'country'    => $customer->country,
+                'phones'     => [],
+                'emails'     => [],
+            ];
+            foreach ($customer->getPhones() as $phone) {
+                $snapshot['phones'][] = !empty($phone['n'])
+                    ? (string) $phone['n']
+                    : (string) \Helper::phoneToNumeric($phone['value'] ?? '');
+            }
+            foreach ($customer->emails_cached as $email_obj) {
+                $snapshot['emails'][] = mb_strtolower($email_obj->email);
+            }
+
+            $plan = EnrichmentPlanner::plan($snapshot, $orders, $enrich, [\Helper::class, 'phoneToNumeric']);
+
+            if ($plan['fields']) {
+                $data = [];
+                foreach ($plan['fields'] as $field => $item) {
+                    $data[$field] = $item['value'];
+                    $added_orders[$item['order']] = true;
+                }
+                // Planner already picked only-empty fields; replace_data=false is
+                // belt-and-braces against concurrent edits.
+                $customer->setData($data, false);
+
+                if (isset($data['first_name']) || isset($data['last_name'])) {
+                    $added[] = __('name');
+                }
+                if (array_diff_key($data, ['first_name' => 1, 'last_name' => 1])) {
+                    $added[] = __('address');
+                }
+            }
+
+            foreach ($plan['phones'] as $item) {
+                $customer->addPhone($item['value']);
+                $added[] = __('Phone').' '.e($item['value']);
                 $added_orders[$item['order']] = true;
             }
-            // Planner already picked only-empty fields; replace_data=false is
-            // belt-and-braces against concurrent edits.
-            $customer->setData($data, false);
 
-            if (isset($data['first_name']) || isset($data['last_name'])) {
-                $added[] = __('name');
-            }
-            if (array_diff_key($data, ['first_name' => 1, 'last_name' => 1])) {
-                $added[] = __('address');
-            }
-        }
-
-        foreach ($plan['phones'] as $item) {
-            $customer->addPhone($item['value']);
-            $added[] = __('Phone').' '.e($item['value']);
-            $added_orders[$item['order']] = true;
-        }
-
-        foreach ($plan['emails'] as $item) {
-            $sanitized = Email::sanitizeEmail($item['value']);
-            if (!$sanitized) {
-                continue;
-            }
-            $existing = Email::where('email', $sanitized)->first();
-            if ($existing) {
-                if ($existing->customer_id != $customer->id) {
-                    // Never merge identities from a background job (spec D8).
-                    // Each skip line embeds its own order number directly, so
-                    // it does not need to feed $added_orders (spec/review: a
-                    // skip must never be credited as a contribution to the
-                    // "enriched from" line).
-                    $skipped[] = ['email' => $sanitized, 'order' => $item['order']];
+            foreach ($plan['emails'] as $item) {
+                $sanitized = Email::sanitizeEmail($item['value']);
+                if (!$sanitized) {
+                    continue;
                 }
-                continue;
+                $existing = Email::where('email', $sanitized)->first();
+                if ($existing) {
+                    if ($existing->customer_id != $customer->id) {
+                        // Never merge identities from a background job (spec D8).
+                        // Each skip line embeds its own order number directly, so
+                        // it does not need to feed $added_orders (spec/review: a
+                        // skip must never be credited as a contribution to the
+                        // "enriched from" line).
+                        $skipped[] = ['email' => $sanitized, 'order' => $item['order']];
+                    }
+                    continue;
+                }
+                $customer->addEmail($sanitized);
+                $added[] = __('Email').' '.e($sanitized);
+                $added_orders[$item['order']] = true;
             }
-            $customer->addEmail($sanitized);
-            $added[] = __('Email').' '.e($sanitized);
-            $added_orders[$item['order']] = true;
+        }
+
+        // ---- Profile photo from Gravatar (independent of order matches).
+        $photo_added = false;
+        if ($enrich['photo']) {
+            $photo_added = GravatarPhoto::apply($customer);
         }
 
         if ($customer->isDirty()) {
@@ -181,7 +187,7 @@ class EnrichCustomer implements ShouldQueue
         }
 
         // ---- Provenance.
-        if (!$added && !$skipped) {
+        if (!$added && !$skipped && !$photo_added) {
             return;
         }
 
@@ -190,6 +196,9 @@ class EnrichCustomer implements ShouldQueue
             $lines[] = __('Customer profile enriched from WooCommerce order :orders', [
                     'orders' => e('#'.implode(', #', array_keys($added_orders))),
                 ]).': '.implode(', ', $added);
+        }
+        if ($photo_added) {
+            $lines[] = __('Profile photo added from Gravatar.');
         }
         foreach ($skipped as $skip) {
             $lines[] = __('WooCommerce order :order matched, but :email belongs to another customer', [

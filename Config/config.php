@@ -11,5 +11,6 @@ return [
         'enrich_email'   => ['default' => true],
         'enrich_name'    => ['default' => true],
         'enrich_address' => ['default' => true],
+        'enrich_photo'   => ['default' => true],
     ],
 ];

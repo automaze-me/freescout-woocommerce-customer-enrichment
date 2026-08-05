@@ -19,6 +19,7 @@
         'enrich_email'   => [__('Alternate emails'), __('Add the order billing email as an additional customer email when it differs.')],
         'enrich_name'    => [__('Name'), __('Fill in first/last name when the customer has none.')],
         'enrich_address' => [__('Company & address'), __('Fill in company, address, city, state, ZIP and country when empty.')],
+        'enrich_photo'   => [__('Profile photo (Gravatar)'), __('Set the profile photo from Gravatar when one exists for any customer email. Existing photos are never replaced. Email hashes are sent to gravatar.com.')],
     ] as $key => $labels)
         <div class="form-group">
             <label class="col-sm-2 control-label">{{ $labels[0] }}</label>

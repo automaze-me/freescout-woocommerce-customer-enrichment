@@ -1,6 +1,6 @@
 # WooCommerce Customer Enrichment
 
-A companion module for the official [WooCommerce](https://freescout.net/module/woocommerce/) module for [FreeScout](https://freescout.net). It solves two recurring problems: customers give you their phone number when placing an order, but that number never shows up in FreeScout when they later email support from the same address; and customers sometimes write in from a different email than the one they ordered with, so the official module's order sidebar finds nothing for them. This module watches incoming customer messages in the background, looks up the customer's WooCommerce orders — by known email addresses and by order numbers detected in the message subject/body — and fills gaps in the FreeScout customer profile (phone, alternate email, name, company/address) from the billing data it finds. Once an order number match adds the billing email to the customer, the official module's "Recent Orders" sidebar starts working for that customer too.
+A companion module for the official [WooCommerce](https://freescout.net/module/woocommerce/) module for [FreeScout](https://freescout.net). It solves two recurring problems: customers give you their phone number when placing an order, but that number never shows up in FreeScout when they later email support from the same address; and customers sometimes write in from a different email than the one they ordered with, so the official module's order sidebar finds nothing for them. This module watches incoming customer messages in the background, looks up the customer's WooCommerce orders — by known email addresses and by order numbers detected in the message subject/body — and fills gaps in the FreeScout customer profile (phone, alternate email, name, company/address, and the profile photo via Gravatar) from the billing data it finds. Once an order number match adds the billing email to the customer, the official module's "Recent Orders" sidebar starts working for that customer too.
 
 ## Requirements
 
@@ -25,6 +25,7 @@ Configured under *Manage → Settings → Customer Enrichment*.
 - **Alternate emails** — add the order's billing email as an additional customer email when it differs from the ones already on file.
 - **Name** — fill in first/last name when the customer has neither.
 - **Company & address** — fill in company, address, city, state, ZIP and country when empty.
+- **Profile photo (Gravatar)** — when the customer has no profile photo, look up [Gravatar](https://gravatar.com) for each of their email addresses (first hit wins) and use it as the profile photo. Existing photos are never replaced. Note: this sends an MD5 hash of the email address to gravatar.com.
 
 ## How matching works
 

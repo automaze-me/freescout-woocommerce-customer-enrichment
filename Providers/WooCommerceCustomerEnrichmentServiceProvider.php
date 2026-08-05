@@ -112,6 +112,7 @@ class WooCommerceCustomerEnrichmentServiceProvider extends ServiceProvider
                 WCCE_MODULE.'.enrich_email'   => \Option::get(WCCE_MODULE.'.enrich_email', true),
                 WCCE_MODULE.'.enrich_name'    => \Option::get(WCCE_MODULE.'.enrich_name', true),
                 WCCE_MODULE.'.enrich_address' => \Option::get(WCCE_MODULE.'.enrich_address', true),
+                WCCE_MODULE.'.enrich_photo'   => \Option::get(WCCE_MODULE.'.enrich_photo', true),
             ];
         }, 20, 2);
 
