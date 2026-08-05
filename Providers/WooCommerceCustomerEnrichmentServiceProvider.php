@@ -66,6 +66,49 @@ class WooCommerceCustomerEnrichmentServiceProvider extends ServiceProvider
         \Eventy::addAction('conversation.created_by_user', function ($conversation, $thread) use ($dispatch_enrichment) {
             $dispatch_enrichment($conversation, $thread);
         }, 20, 2);
+
+        // Settings section.
+        \Eventy::addFilter('settings.sections', function ($sections) {
+            $sections[WCCE_MODULE] = ['title' => __('WooCommerce Customer Enrichment'), 'icon' => 'user', 'order' => 560];
+            return $sections;
+        }, 30, 1);
+
+        \Eventy::addFilter('settings.view', function ($view, $section) {
+            return $section === WCCE_MODULE ? 'woocommercecustomerenrichment::settings' : $view;
+        }, 20, 2);
+
+        \Eventy::addFilter('settings.section_settings', function ($settings, $section) {
+            if ($section !== WCCE_MODULE) {
+                return $settings;
+            }
+            return [
+                WCCE_MODULE.'.pattern'        => \Option::get(WCCE_MODULE.'.pattern') ?: \Modules\WooCommerceCustomerEnrichment\Services\OrderNumberExtractor::DEFAULT_PATTERN,
+                WCCE_MODULE.'.enrich_phone'   => \Option::get(WCCE_MODULE.'.enrich_phone', true),
+                WCCE_MODULE.'.enrich_email'   => \Option::get(WCCE_MODULE.'.enrich_email', true),
+                WCCE_MODULE.'.enrich_name'    => \Option::get(WCCE_MODULE.'.enrich_name', true),
+                WCCE_MODULE.'.enrich_address' => \Option::get(WCCE_MODULE.'.enrich_address', true),
+            ];
+        }, 20, 2);
+
+        // Validate the pattern: must compile. Empty is allowed (falls back to
+        // the default at runtime); invalid keeps the previous value.
+        \Eventy::addFilter('settings.before_save', function ($request, $section, $settings) {
+            if ($section !== WCCE_MODULE) {
+                return $request;
+            }
+            $new = $request->settings ?: [];
+            $pattern = trim($new[WCCE_MODULE.'.pattern'] ?? '');
+
+            if ($pattern !== ''
+                && @preg_match('~'.str_replace('~', '\~', $pattern).'~iu', 'probe #12345') === false
+            ) {
+                $new[WCCE_MODULE.'.pattern'] = \Option::get(WCCE_MODULE.'.pattern') ?: '';
+                $request->session()->flash('flash_error', __('Invalid order number pattern — keeping the previous value.'));
+                $request->merge(['settings' => $new]);
+            }
+
+            return $request;
+        }, 20, 3);
     }
 
     public function register()

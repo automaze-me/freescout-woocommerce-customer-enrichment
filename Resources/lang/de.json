@@ -1,0 +1,19 @@
+{
+    "WooCommerce Customer Enrichment": "WooCommerce-Kundenanreicherung",
+    "Order Number Detection": "Bestellnummern-Erkennung",
+    "Order number pattern": "Bestellnummern-Muster",
+    "Regular expression (without delimiters, case-insensitive) with one capture group for the order number. Applied to the subject and body of incoming messages. Leave empty to use the built-in default.": "Regulärer Ausdruck (ohne Begrenzer, unabhängig von Groß-/Kleinschreibung) mit einer Erfassungsgruppe für die Bestellnummer. Wird auf Betreff und Text eingehender Nachrichten angewendet. Leer lassen für den eingebauten Standard.",
+    "Profile Enrichment": "Profil-Anreicherung",
+    "Phone numbers": "Telefonnummern",
+    "Add billing phone numbers from matched orders (existing numbers are never removed).": "Telefonnummern aus gefundenen Bestellungen ergänzen (vorhandene Nummern werden nie entfernt).",
+    "Alternate emails": "Alternative E-Mail-Adressen",
+    "Add the order billing email as an additional customer email when it differs.": "Die Rechnungs-E-Mail der Bestellung als zusätzliche Kunden-E-Mail ergänzen, wenn sie abweicht.",
+    "Fill in first/last name when the customer has none.": "Vor- und Nachname ergänzen, wenn beim Kunden keiner hinterlegt ist.",
+    "Company & address": "Firma & Adresse",
+    "Fill in company, address, city, state, ZIP and country when empty.": "Firma, Adresse, Stadt, Bundesland, PLZ und Land ergänzen, wenn leer.",
+    "Invalid order number pattern — keeping the previous value.": "Ungültiges Bestellnummern-Muster — der vorherige Wert bleibt erhalten.",
+    "Customer profile enriched from WooCommerce order :orders": "Kundenprofil ergänzt aus WooCommerce-Bestellung :orders",
+    "WooCommerce order :order matched, but :email belongs to another customer": "WooCommerce-Bestellung :order gefunden, aber :email gehört zu einem anderen Kunden",
+    "name": "Name",
+    "address": "Adresse"
+}
