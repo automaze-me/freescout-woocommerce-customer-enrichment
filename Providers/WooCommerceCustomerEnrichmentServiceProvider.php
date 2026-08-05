@@ -27,10 +27,11 @@ class WooCommerceCustomerEnrichmentServiceProvider extends ServiceProvider
 
     /**
      * Module hooks.
-     * - thread.action_text filter (line item rendering) — in place.
-     * Filled by later tasks:
-     * - conversation.* triggers dispatching the EnrichCustomer job
-     * - settings.* filters (settings section)
+     * - thread.action_text filter: renders our enrichment line items.
+     * - Three conversation triggers (created_by_customer, customer_replied,
+     *   created_by_user) dispatching the EnrichCustomer job.
+     * - settings.* filters wiring up the module's settings section
+     *   (sections, view, section_settings, before_save validation).
      */
     public function hooks()
     {
