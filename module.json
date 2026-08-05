@@ -3,6 +3,7 @@
     "alias": "woocommercecustomerenrichment",
     "description": "Automatically fills customer profiles (phone, alternate email, name, address) from WooCommerce order billing data, including orders referenced by number in the message subject or body.",
     "version": "0.3.0",
+    "img": "/modules/woocommercecustomerenrichment/img/icon.png",
     "author": "Jörn Bungartz - automaze.me",
     "authorUrl": "https://automaze.me",
     "detailsUrl": "https://github.com/automaze-me/freescout-woocommerce-customer-enrichment",
