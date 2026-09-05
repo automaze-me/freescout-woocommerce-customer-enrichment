@@ -4,6 +4,7 @@ namespace Modules\WooCommerceCustomerEnrichment\Jobs;
 
 use App\Conversation;
 use App\Email;
+use App\Mailbox;
 use App\Thread;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -12,6 +13,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Modules\WooCommerceCustomerEnrichment\Services\EnrichmentLineItem;
 use Modules\WooCommerceCustomerEnrichment\Services\GravatarPhoto;
+use Modules\WooCommerceCustomerEnrichment\Services\InternalSender;
 use Modules\WooCommerceCustomerEnrichment\Services\EnrichmentPlanner;
 use Modules\WooCommerceCustomerEnrichment\Services\OrderNumberExtractor;
 use Modules\WooCommerceCustomerEnrichment\Services\WcApi;
@@ -71,6 +73,18 @@ class EnrichCustomer implements ShouldQueue
             'photo'   => (bool) \Option::get(WCCE_MODULE.'.enrich_photo', true),
         ];
         if (!array_filter($enrich)) {
+            return;
+        }
+
+        // ---- Never enrich the shop itself: the mailbox address, an alias, or
+        // any address on the shop's domain. Its automation mails (order alerts,
+        // seller notifications) cite other people's order numbers, so enriching
+        // that record piles strangers' contact data onto one profile.
+        if (InternalSender::matches(
+            $customer->emails_cached->pluck('email')->all(),
+            self::ownAddresses(),
+            self::ownHosts($wc_mailbox)
+        )) {
             return;
         }
 
@@ -212,5 +226,41 @@ class EnrichCustomer implements ShouldQueue
         }
 
         EnrichmentLineItem::create($conversation, implode('<br>', $lines));
+    }
+
+    /**
+     * Addresses and aliases of every mailbox: mail from any of them is the
+     * helpdesk talking to itself, whichever mailbox it landed in.
+     *
+     * @return string[]
+     */
+    protected static function ownAddresses()
+    {
+        $addresses = [];
+        foreach (Mailbox::all() as $mailbox) {
+            $addresses = array_merge($addresses, $mailbox->getEmails());
+        }
+
+        return $addresses;
+    }
+
+    /**
+     * Shop URLs the enrichment would query: the global one and, when the
+     * conversation's mailbox has its own WooCommerce credentials, that one.
+     *
+     * @return string[]
+     */
+    protected static function ownHosts($wc_mailbox)
+    {
+        $hosts = [];
+        if (\WooCommerce::isApiEnabled()) {
+            $hosts[] = \WooCommerce::getSanitizedUrl();
+        }
+        if ($wc_mailbox) {
+            $settings = \WooCommerce::getMailboxWcSettings($wc_mailbox);
+            $hosts[]  = $settings['url'] ?? '';
+        }
+
+        return array_filter($hosts);
     }
 }
