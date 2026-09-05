@@ -32,7 +32,12 @@ Configured under *Manage → Settings → Customer Enrichment*.
 Enrichment runs automatically whenever a customer message arrives or an agent creates a conversation for a customer. Two matching paths run every time, and their results are combined:
 
 - **By customer email** — every email address already on the customer's profile is looked up against WooCommerce orders, exactly the way the official module's order sidebar does (same credentials, same cache).
-- **By order number** — the message subject and body are scanned with the configured pattern, and each order number found (up to three) is looked up directly by ID. This is what catches a customer writing from an email address WooCommerce doesn't recognize yet.
+- **By order number** — the message subject and body are scanned with the configured pattern, and each order number found (up to three) is looked up directly by ID. This is what catches a customer writing from an email address WooCommerce doesn't recognize yet. FreeScout's own ticket tag in subjects and quoted replies (`[#1317]`) and the conversation's own number are never treated as order numbers.
+
+Two kinds of conversations are never enriched:
+
+- **The shop itself.** If the customer record holds a mailbox address, one of its aliases, or any address on the shop's own domain (from the WooCommerce URL setting), the module does nothing. Such records collect the shop's automated mails — order alerts, seller notifications, monitoring — which cite *other people's* order numbers; enriching them would pile strangers' phone numbers and emails onto one profile, and later route those people's tickets to it.
+- **Conversations without WooCommerce credentials** for their mailbox (neither global nor per-mailbox).
 
 Profile fields (name, company, address) are **fill-gaps-only**: a value an agent already entered is never overwritten. Phone numbers and email addresses are **lists** — a newly found billing phone or email is appended, deduplicated against what's already on the customer, and existing entries are never removed or replaced.
 
