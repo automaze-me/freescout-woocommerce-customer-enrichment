@@ -77,4 +77,37 @@ class OrderNumberExtractorTest extends TestCase
     {
         $this->assertSame([], OrderNumberExtractor::extract('#12345', '#\d+'));
     }
+
+    // FreeScout tags outgoing subjects with the conversation number as
+    // "[#1317]"; customer replies bring it back in the subject and in
+    // quoted Outlook headers. It is never an order number.
+    public function testFreeScoutTicketTagIsIgnored()
+    {
+        $this->assertSame([], $this->extract('AW: [#1317] Servus zusammen'));
+    }
+
+    public function testTicketTagInQuotedHeaderDoesNotHideRealOrder()
+    {
+        $text = "Betreff: AW: [#1317] Rückfrage\nVon: info@example.org\n\nBestellung 4390 ist falsch";
+        $this->assertSame(['4390'], $this->extract($text));
+    }
+
+    public function testTicketTagStrippedEvenWithSpacesInsideBrackets()
+    {
+        $this->assertSame([], $this->extract('Re: [ #1317 ] Hallo'));
+    }
+
+    public function testIgnoredNumbersAreSkipped()
+    {
+        $this->assertSame(['4390'],
+            OrderNumberExtractor::extract('#1510 und #4390', OrderNumberExtractor::DEFAULT_PATTERN, ['1510']));
+        $this->assertSame(['4390'],
+            OrderNumberExtractor::extract('#1510 und #4390', OrderNumberExtractor::DEFAULT_PATTERN, [1510]));
+    }
+
+    public function testIgnoredNumbersDoNotCountTowardsCap()
+    {
+        $this->assertSame(['100', '200', '300'],
+            OrderNumberExtractor::extract('#1510 #100 #200 #300', OrderNumberExtractor::DEFAULT_PATTERN, ['1510']));
+    }
 }

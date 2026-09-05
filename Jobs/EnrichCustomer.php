@@ -82,7 +82,11 @@ class EnrichCustomer implements ShouldQueue
         $pattern = \Option::get(WCCE_MODULE.'.pattern') ?: OrderNumberExtractor::DEFAULT_PATTERN;
         $text    = $conversation->subject."\n".\Helper::htmlToText($thread->body ?? '');
 
-        foreach (OrderNumberExtractor::extract($text, $pattern) as $number) {
+        // The conversation's own number is never an order number, even when it
+        // appears without FreeScout's "[#N]" brackets (a customer quoting it).
+        $ignore = array_filter([$conversation->number]);
+
+        foreach (OrderNumberExtractor::extract($text, $pattern, $ignore) as $number) {
             $order = WcApi::getOrder($number, $wc_mailbox);
             if ($order && empty($order_ids[$order['id']])) {
                 $order_ids[$order['id']] = true;
