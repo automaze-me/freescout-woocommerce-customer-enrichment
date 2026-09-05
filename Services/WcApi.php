@@ -31,9 +31,9 @@ class WcApi
             return $cached;
         }
 
-        // Encode the email for the outgoing request only; the cache key stays
-        // raw to keep parity with the official module's cache keys.
-        $result = \WooCommerce::apiGetOrders(rawurlencode($email), $mailbox_enabled ? $mailbox : null);
+        // Hand the address over verbatim: the official module sanitizes it
+        // (rejecting anything without a literal "@") and URL-encodes it itself.
+        $result = \WooCommerce::apiGetOrders($email, $mailbox_enabled ? $mailbox : null);
 
         if (!empty($result['error'])) {
             \Log::error('[WooCommerceCustomerEnrichment] Order search failed for '.$email.': '.$result['error']);
