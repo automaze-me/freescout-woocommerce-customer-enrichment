@@ -22,13 +22,12 @@ class EnrichmentPlanner
     ];
 
     /**
-     * @param array    $customer        snapshot (see plan doc / tests)
-     * @param array    $orders          candidate orders, priority order
-     * @param array    $enrich          ['phone'=>bool,'email'=>bool,'name'=>bool,'address'=>bool]
-     * @param callable $normalize_phone fn(string): string
+     * @param array $customer snapshot (see plan doc / tests); phones as stored
+     * @param array $orders   candidate orders, priority order
+     * @param array $enrich   ['phone'=>bool,'email'=>bool,'name'=>bool,'address'=>bool]
      * @return array ['fields'=>[], 'phones'=>[], 'emails'=>[]]
      */
-    public static function plan(array $customer, array $orders, array $enrich, callable $normalize_phone)
+    public static function plan(array $customer, array $orders, array $enrich)
     {
         $plan = ['fields' => [], 'phones' => [], 'emails' => []];
 
@@ -65,12 +64,12 @@ class EnrichmentPlanner
                 }
             }
 
-            if (!empty($enrich['phone']) && !empty($billing['phone'])) {
-                $normalized = (string) call_user_func($normalize_phone, $billing['phone']);
-                if ($normalized !== '' && !in_array($normalized, $known_phones, true)) {
-                    $known_phones[] = $normalized;
-                    $plan['phones'][] = ['value' => $billing['phone'], 'order' => $number];
-                }
+            if (!empty($enrich['phone']) && !empty($billing['phone'])
+                && preg_match('/[0-9]/', $billing['phone'])
+                && !self::knownPhone($billing['phone'], $known_phones)
+            ) {
+                $known_phones[] = $billing['phone'];
+                $plan['phones'][] = ['value' => $billing['phone'], 'order' => $number];
             }
 
             if (!empty($enrich['email']) && !empty($billing['email'])) {
@@ -83,5 +82,21 @@ class EnrichmentPlanner
         }
 
         return $plan;
+    }
+
+    /**
+     * Same digits, or the same number in another notation ("0171…" in the
+     * order, "+49171…" on a WhatsApp customer).
+     */
+    protected static function knownPhone($phone, array $known_phones)
+    {
+        $digits = preg_replace('/[^0-9]/', '', $phone);
+        foreach ($known_phones as $known) {
+            if (preg_replace('/[^0-9]/', '', $known) === $digits || PhoneMatch::same($phone, $known)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

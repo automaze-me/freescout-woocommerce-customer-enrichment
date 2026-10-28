@@ -137,15 +137,13 @@ class EnrichCustomer implements ShouldQueue
                 'emails'     => [],
             ];
             foreach ($customer->getPhones() as $phone) {
-                $snapshot['phones'][] = !empty($phone['n'])
-                    ? (string) $phone['n']
-                    : (string) \Helper::phoneToNumeric($phone['value'] ?? '');
+                $snapshot['phones'][] = (string) ($phone['value'] ?? '');
             }
             foreach ($customer->emails_cached as $email_obj) {
                 $snapshot['emails'][] = mb_strtolower($email_obj->email);
             }
 
-            $plan = EnrichmentPlanner::plan($snapshot, $orders, $enrich, [\Helper::class, 'phoneToNumeric']);
+            $plan = EnrichmentPlanner::plan($snapshot, $orders, $enrich);
 
             if ($plan['fields']) {
                 $data = [];
