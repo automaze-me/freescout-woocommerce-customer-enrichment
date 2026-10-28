@@ -63,6 +63,23 @@ namespace Modules\WooCommerceCustomerEnrichment\Tests\Unit {
     use Modules\WooCommerceCustomerEnrichment\Services\WcApi;
 
     require_once __DIR__.'/../../Services/WcApi.php';
+    require_once __DIR__.'/../../Services/PhoneMatch.php';
+
+    /** Answers WooCommerce REST requests from a script instead of the network. */
+    class ScriptedWcApi extends WcApi
+    {
+        /** @var array[] [path, query] per request, in call order */
+        public static $requests = [];
+        public static $status   = 200;
+        public static $body     = [];
+
+        protected static function request($path, array $query, $mailbox = null)
+        {
+            self::$requests[] = [$path, $query];
+
+            return [self::$status, self::$body];
+        }
+    }
 
     class WcApiTest extends TestCase
     {
@@ -72,6 +89,15 @@ namespace Modules\WooCommerceCustomerEnrichment\Tests\Unit {
             \WooCommerce::$searched = [];
             \WooCommerce::$response = ['error' => '', 'data' => [['id' => 4390, 'currency' => 'EUR']]];
             \Log::$errors          = [];
+
+            ScriptedWcApi::$requests = [];
+            ScriptedWcApi::$status   = 200;
+            ScriptedWcApi::$body     = [];
+        }
+
+        private static function order($id, $phone)
+        {
+            return ['id' => $id, 'currency' => 'EUR', 'billing' => ['phone' => $phone]];
         }
 
         // The official module sanitizes the address itself and rejects
@@ -99,6 +125,61 @@ namespace Modules\WooCommerceCustomerEnrichment\Tests\Unit {
             \WooCommerce::$response = ['error' => 'boom', 'data' => []];
 
             $this->assertSame([], WcApi::getOrdersByEmail('buyer@example.org'));
+            $this->assertCount(1, \Log::$errors);
+            $this->assertSame([], \Cache::$store);
+        }
+    
+        // A WhatsApp customer has no email, only the international number it
+        // wrote from; the shop stored what the buyer typed at checkout.
+        public function testPhoneFindsOrdersStoredInNationalNotation()
+        {
+            ScriptedWcApi::$body = [self::order(5154, '0160/1234567')];
+
+            $orders = ScriptedWcApi::getOrdersByPhone('+491601234567');
+
+            $this->assertSame([5154], array_column($orders, 'id'));
+            $this->assertSame('orders', ScriptedWcApi::$requests[0][0]);
+            $this->assertSame('1234567', ScriptedWcApi::$requests[0][1]['search']);
+        }
+
+        // The search term is only seven digits: whatever else contains them
+        // (another buyer's number) must not count as this customer's order.
+        public function testPhoneSearchKeepsOnlyOrdersWithTheSameNumber()
+        {
+            ScriptedWcApi::$body = [
+                self::order(5154, '0160 1234567'),
+                self::order(4711, '0171 1234567'),
+                self::order(4712, ''),
+            ];
+
+            $orders = ScriptedWcApi::getOrdersByPhone('+491601234567');
+
+            $this->assertSame([5154], array_column($orders, 'id'));
+        }
+
+        public function testPhoneSearchIsCached()
+        {
+            ScriptedWcApi::$body = [self::order(5154, '01601234567')];
+
+            ScriptedWcApi::getOrdersByPhone('+491601234567');
+            $orders = ScriptedWcApi::getOrdersByPhone('+491601234567');
+
+            $this->assertCount(1, ScriptedWcApi::$requests);
+            $this->assertSame([5154], array_column($orders, 'id'));
+        }
+
+        public function testPhoneTooShortIsNeverSearched()
+        {
+            $this->assertSame([], ScriptedWcApi::getOrdersByPhone('12345'));
+            $this->assertSame([], ScriptedWcApi::$requests);
+        }
+
+        public function testPhoneSearchErrorYieldsNoOrdersAndIsLogged()
+        {
+            ScriptedWcApi::$status = 500;
+            ScriptedWcApi::$body   = null;
+
+            $this->assertSame([], ScriptedWcApi::getOrdersByPhone('+491601234567'));
             $this->assertCount(1, \Log::$errors);
             $this->assertSame([], \Cache::$store);
         }

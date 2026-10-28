@@ -1,6 +1,6 @@
 # WooCommerce Customer Enrichment
 
-A companion module for the official [WooCommerce](https://freescout.net/module/woocommerce/) module for [FreeScout](https://freescout.net). It solves two recurring problems: customers give you their phone number when placing an order, but that number never shows up in FreeScout when they later email support from the same address; and customers sometimes write in from a different email than the one they ordered with, so the official module's order sidebar finds nothing for them. This module watches incoming customer messages in the background, looks up the customer's WooCommerce orders — by known email addresses and by order numbers detected in the message subject/body — and fills gaps in the FreeScout customer profile (phone, alternate email, name, company/address, and the profile photo via Gravatar) from the billing data it finds. Once an order number match adds the billing email to the customer, the official module's "Recent Orders" sidebar starts working for that customer too.
+A companion module for the official [WooCommerce](https://freescout.net/module/woocommerce/) module for [FreeScout](https://freescout.net). It solves two recurring problems: customers give you their phone number when placing an order, but that number never shows up in FreeScout when they later email support from the same address; and customers sometimes write in from a different email than the one they ordered with, or over WhatsApp with no email at all, so the official module's order sidebar finds nothing for them. This module watches incoming customer messages in the background, looks up the customer's WooCommerce orders — by known email addresses, by phone numbers, and by order numbers detected in the message subject/body — and fills gaps in the FreeScout customer profile (phone, alternate email, name, company/address, and the profile photo via Gravatar) from the billing data it finds. Once an order number or phone match adds the billing email to the customer, the official module's "Recent Orders" sidebar starts working for that customer too.
 
 ## Requirements
 
@@ -29,9 +29,10 @@ Configured under *Manage → Settings → Customer Enrichment*.
 
 ## How matching works
 
-Enrichment runs automatically whenever a customer message arrives or an agent creates a conversation for a customer. Two matching paths run every time, and their results are combined:
+Enrichment runs automatically whenever a customer message arrives or an agent creates a conversation for a customer. Three matching paths run every time, and their results are combined:
 
 - **By customer email** — every email address already on the customer's profile is looked up against WooCommerce orders, exactly the way the official module's order sidebar does (same credentials, same cache).
+- **By phone number** — every phone number on the customer's profile is searched for in the orders' billing phones. This is what finds the orders of customers who write in over a channel without email, such as WhatsApp: once their order's billing email is added to the profile, the official module's "Recent Orders" sidebar shows their orders. Notations are compared as numbers, so `+49 176 1234567` matches an order placed with `0176 1234567`, `0176/1234567` or `0049 176 1234567`. The shop is searched for the number's last seven digits, so a number the buyer typed with separators *within* those digits (`0176 123 45 67`) is not found.
 - **By order number** — the message subject and body are scanned with the configured pattern, and each order number found (up to three) is looked up directly by ID. This is what catches a customer writing from an email address WooCommerce doesn't recognize yet. FreeScout's own ticket tag in subjects and quoted replies (`[#1317]`) and the conversation's own number are never treated as order numbers.
 
 Two kinds of conversations are never enriched:
@@ -39,7 +40,7 @@ Two kinds of conversations are never enriched:
 - **The shop itself.** If the customer record holds a mailbox address, one of its aliases, or any address on the shop's own domain (from the WooCommerce URL setting), the module does nothing. Such records collect the shop's automated mails — order alerts, seller notifications, monitoring — which cite *other people's* order numbers; enriching them would pile strangers' phone numbers and emails onto one profile, and later route those people's tickets to it.
 - **Conversations without WooCommerce credentials** for their mailbox (neither global nor per-mailbox).
 
-Profile fields (name, company, address) are **fill-gaps-only**: a value an agent already entered is never overwritten. Phone numbers and email addresses are **lists** — a newly found billing phone or email is appended, deduplicated against what's already on the customer, and existing entries are never removed or replaced.
+Profile fields (name, company, address) are **fill-gaps-only**: a value an agent already entered is never overwritten. Phone numbers and email addresses are **lists** — a newly found billing phone or email is appended, deduplicated against what's already on the customer (phone numbers by number, not by notation), and existing entries are never removed or replaced.
 
 Every change is recorded as a line item on the conversation ("Customer profile enriched from WooCommerce order #…: …"), naming exactly what was added and from which order — so if an order-number match turns out to be wrong, an agent can see it immediately and correct the profile by hand.
 

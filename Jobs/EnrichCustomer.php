@@ -89,7 +89,8 @@ class EnrichCustomer implements ShouldQueue
         }
 
         // ---- Candidate orders: by number in subject/body first (most
-        // specific — it's what the ticket is about), then by customer emails.
+        // specific — it's what the ticket is about), then by customer emails
+        // and phones.
         $orders    = [];
         $order_ids = [];
 
@@ -111,6 +112,18 @@ class EnrichCustomer implements ShouldQueue
         foreach ($customer->emails_cached as $email_obj) {
             foreach (WcApi::getOrdersByEmail($email_obj->email, $mailbox) as $order) {
                 if (!empty($order['id']) && empty($order_ids[$order['id']])) {
+                    $order_ids[$order['id']] = true;
+                    $orders[] = $order;
+                }
+            }
+        }
+
+        // Channel customers (WhatsApp) often have no email at all, only the
+        // number they wrote from. The billing email found this way is what
+        // lets the official module's order sidebar work for them.
+        foreach ($customer->getPhones() as $phone) {
+            foreach (WcApi::getOrdersByPhone($phone['value'] ?? '', $wc_mailbox) as $order) {
+                if (empty($order_ids[$order['id']])) {
                     $order_ids[$order['id']] = true;
                     $orders[] = $order;
                 }

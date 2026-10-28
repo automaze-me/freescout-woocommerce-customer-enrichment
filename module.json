@@ -1,7 +1,7 @@
 {
     "name": "WooCommerce Customer Enrichment",
     "alias": "woocommercecustomerenrichment",
-    "description": "Automatically fills customer profiles (phone, alternate email, name, address) from WooCommerce order billing data, including orders referenced by number in the message subject or body.",
+    "description": "Automatically fills customer profiles (phone, alternate email, name, address) from WooCommerce order billing data, including orders matched by phone number or referenced by number in the message subject or body.",
     "version": "0.3.1",
     "img": "/modules/woocommercecustomerenrichment/img/icon.png",
     "author": "Jörn Bungartz - automaze.me",
