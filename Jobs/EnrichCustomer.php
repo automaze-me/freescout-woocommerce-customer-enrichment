@@ -16,6 +16,7 @@ use Modules\WooCommerceCustomerEnrichment\Services\GravatarPhoto;
 use Modules\WooCommerceCustomerEnrichment\Services\InternalSender;
 use Modules\WooCommerceCustomerEnrichment\Services\EnrichmentPlanner;
 use Modules\WooCommerceCustomerEnrichment\Services\OrderNumberExtractor;
+use Modules\WooCommerceCustomerEnrichment\Services\OrderOwnership;
 use Modules\WooCommerceCustomerEnrichment\Services\WcApi;
 
 class EnrichCustomer implements ShouldQueue
@@ -91,8 +92,8 @@ class EnrichCustomer implements ShouldQueue
         // ---- Candidate orders: by number in subject/body first (most
         // specific — it's what the ticket is about), then by customer emails
         // and phones.
-        $orders    = [];
-        $order_ids = [];
+        $number_orders = []; // id => order
+        $own_orders    = []; // id => order, found through the customer's own emails/phones
 
         $pattern = \Option::get(WCCE_MODULE.'.pattern') ?: OrderNumberExtractor::DEFAULT_PATTERN;
         $text    = $conversation->subject."\n".\Helper::htmlToText($thread->body ?? '');
@@ -103,17 +104,15 @@ class EnrichCustomer implements ShouldQueue
 
         foreach (OrderNumberExtractor::extract($text, $pattern, $ignore) as $number) {
             $order = WcApi::getOrder($number, $wc_mailbox);
-            if ($order && empty($order_ids[$order['id']])) {
-                $order_ids[$order['id']] = true;
-                $orders[] = $order;
+            if ($order && !empty($order['id']) && empty($number_orders[$order['id']])) {
+                $number_orders[$order['id']] = $order;
             }
         }
 
         foreach ($customer->emails_cached as $email_obj) {
             foreach (WcApi::getOrdersByEmail($email_obj->email, $mailbox) as $order) {
-                if (!empty($order['id']) && empty($order_ids[$order['id']])) {
-                    $order_ids[$order['id']] = true;
-                    $orders[] = $order;
+                if (!empty($order['id']) && empty($own_orders[$order['id']])) {
+                    $own_orders[$order['id']] = $order;
                 }
             }
         }
@@ -123,10 +122,26 @@ class EnrichCustomer implements ShouldQueue
         // lets the official module's order sidebar work for them.
         foreach ($customer->getPhones() as $phone) {
             foreach (WcApi::getOrdersByPhone($phone['value'] ?? '', $wc_mailbox) as $order) {
-                if (empty($order_ids[$order['id']])) {
-                    $order_ids[$order['id']] = true;
-                    $orders[] = $order;
+                if (!empty($order['id']) && empty($own_orders[$order['id']])) {
+                    $own_orders[$order['id']] = $order;
                 }
+            }
+        }
+
+        // An order found only by its number is not necessarily the sender's: a
+        // supplier replying to "Order #1234 – please ship" cites the end
+        // customer's order. It counts only when the billing last name matches.
+        $ownership = OrderOwnership::partition(
+            array_values($number_orders),
+            array_keys($own_orders),
+            $customer->first_name,
+            $customer->last_name
+        );
+
+        $orders = $ownership['trusted'];
+        foreach ($own_orders as $id => $order) {
+            if (empty($number_orders[$id])) {
+                $orders[] = $order;
             }
         }
 
@@ -216,10 +231,6 @@ class EnrichCustomer implements ShouldQueue
         }
 
         // ---- Provenance.
-        if (!$added && !$skipped && !$photo_added) {
-            return;
-        }
-
         $lines = [];
         if ($added) {
             $lines[] = __('Customer profile enriched from WooCommerce order :orders', [
@@ -234,6 +245,29 @@ class EnrichCustomer implements ShouldQueue
                 'order' => e('#'.$skip['order']),
                 'email' => e($skip['email']),
             ]);
+        }
+
+        // Tells the agent whose order the message is about. Noted once per
+        // conversation, not again on every reply in it.
+        if ($ownership['foreign']) {
+            $noted = $conversation->threads()->where('type', Thread::TYPE_LINEITEM)->pluck('body')->implode("\n");
+            foreach ($ownership['foreign'] as $item) {
+                $line = $item['name'] !== ''
+                    ? __('WooCommerce order :order is mentioned, but it was placed by :name — nothing was taken from it', [
+                        'order' => e('#'.$item['order']),
+                        'name'  => e($item['name']),
+                    ])
+                    : __('WooCommerce order :order is mentioned, but it could not be confirmed as this customer\'s — nothing was taken from it', [
+                        'order' => e('#'.$item['order']),
+                    ]);
+                if (strpos($noted, $line) === false) {
+                    $lines[] = $line;
+                }
+            }
+        }
+
+        if (!$lines) {
+            return;
         }
 
         EnrichmentLineItem::create($conversation, implode('<br>', $lines));
