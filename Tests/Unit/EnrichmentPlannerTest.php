@@ -63,6 +63,42 @@ class EnrichmentPlannerTest extends TestCase
         $this->assertArrayNotHasKey('city', $plan['fields']);
     }
 
+    // Company and address belong to one buyer: never street from one order,
+    // state from a second and company from a third.
+    public function testCompanyAndAddressComeFromOneOrderOnly()
+    {
+        $plan = EnrichmentPlanner::plan(
+            $this->customer(),
+            [
+                $this->order(['address_1' => 'Hauptstr. 5', 'city' => 'Musterstadt', 'postcode' => '12345', 'country' => 'DE'], '111'),
+                $this->order(['state' => 'Tirol', 'company' => 'Forstbetrieb Beispiel'], '222'),
+            ],
+            $this->allOn()
+        );
+
+        $this->assertSame('Musterstadt', $plan['fields']['city']['value']);
+        $this->assertSame('111', $plan['fields']['city']['order']);
+        $this->assertArrayNotHasKey('state', $plan['fields']);
+        $this->assertArrayNotHasKey('company', $plan['fields']);
+    }
+
+    // An order with nothing but a country (virtual products) must not block
+    // the full address of a later order.
+    public function testOrderWithARealAddressWinsOverOneWithOnlyACountry()
+    {
+        $plan = EnrichmentPlanner::plan(
+            $this->customer(),
+            [
+                $this->order(['country' => 'AT'], '111'),
+                $this->order(['address_1' => 'Musterstr. 1', 'city' => 'Köln', 'postcode' => '50823', 'country' => 'DE'], '222'),
+            ],
+            $this->allOn()
+        );
+
+        $this->assertSame('Köln', $plan['fields']['city']['value']);
+        $this->assertSame('DE', $plan['fields']['country']['value']);
+    }
+
     public function testAddressJoinsAddressLines()
     {
         $plan = EnrichmentPlanner::plan(

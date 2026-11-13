@@ -6,7 +6,8 @@ namespace Modules\WooCommerceCustomerEnrichment\Services;
  * Pure planning: decides what to change given a customer snapshot and
  * candidate orders. No Laravel, no I/O — unit-testable standalone.
  *
- * Fill-gaps-only for scalar fields; append-with-dedup for phones/emails.
+ * Fill-gaps-only for scalar fields (company and address all from one order);
+ * append-with-dedup for phones/emails.
  * Whether a planned email belongs to another FreeScout customer is checked
  * by the caller (needs DB access).
  */
@@ -34,7 +35,11 @@ class EnrichmentPlanner
         $known_phones = $customer['phones'] ?? [];
         $known_emails = array_map('mb_strtolower', $customer['emails'] ?? []);
 
-        foreach ($orders as $order) {
+        // Company and address are taken as one block from a single order, so
+        // street, city, state and company never come from different buyers.
+        $address_index = !empty($enrich['address']) ? self::addressSource($orders) : null;
+
+        foreach ($orders as $i => $order) {
             $billing = $order['billing'] ?? [];
             $number  = (string) ($order['number'] ?? ($order['id'] ?? ''));
 
@@ -52,14 +57,14 @@ class EnrichmentPlanner
                 }
             }
 
-            if (!empty($enrich['address'])) {
+            if ($i === $address_index) {
                 foreach (self::FIELD_MAP as $field => $key) {
-                    if (empty($customer[$field]) && !isset($plan['fields'][$field]) && !empty($billing[$key])) {
+                    if (empty($customer[$field]) && !empty($billing[$key])) {
                         $plan['fields'][$field] = ['value' => $billing[$key], 'order' => $number];
                     }
                 }
                 $address = trim(($billing['address_1'] ?? '').' '.($billing['address_2'] ?? ''));
-                if (empty($customer['address']) && !isset($plan['fields']['address']) && $address !== '') {
+                if (empty($customer['address']) && $address !== '') {
                     $plan['fields']['address'] = ['value' => $address, 'order' => $number];
                 }
             }
@@ -82,6 +87,38 @@ class EnrichmentPlanner
         }
 
         return $plan;
+    }
+
+    /**
+     * Index of the order to take company and address from: the first with a
+     * street, city or ZIP; failing that, the first with any company/address
+     * value (e.g. only a country); null when none has any.
+     */
+    protected static function addressSource(array $orders)
+    {
+        $fallback = null;
+        foreach ($orders as $i => $order) {
+            $billing = $order['billing'] ?? [];
+            if (self::anyValue($billing, ['address_1', 'city', 'postcode'])) {
+                return $i;
+            }
+            if ($fallback === null && self::anyValue($billing, array_merge(array_values(self::FIELD_MAP), ['address_2']))) {
+                $fallback = $i;
+            }
+        }
+
+        return $fallback;
+    }
+
+    protected static function anyValue(array $billing, array $keys)
+    {
+        foreach ($keys as $key) {
+            if (trim((string) ($billing[$key] ?? '')) !== '') {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
