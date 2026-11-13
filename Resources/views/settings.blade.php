@@ -12,6 +12,17 @@
         </div>
     </div>
 
+    <h3 class="subheader">{{ __('Excluded Senders') }}</h3>
+
+    <div class="form-group">
+        <label class="col-sm-2 control-label">{{ __('Never enrich') }}</label>
+        <div class="col-sm-6">
+            <textarea class="form-control input-sized-lg" rows="3" name="settings[woocommercecustomerenrichment.excluded_senders]"
+                placeholder="sales@supplier.com&#10;fulfiller.com">{{ old('settings.woocommercecustomerenrichment.excluded_senders', $settings['woocommercecustomerenrichment.excluded_senders']) }}</textarea>
+            <p class="help-block">{{ __('Email addresses or domains, one per line. Customers with such an address are never enriched — useful for suppliers, fulfillers and other partners whose mails cite your customers\' order numbers.') }}</p>
+        </div>
+    </div>
+
     <h3 class="subheader">{{ __('Profile Enrichment') }}</h3>
 
     @foreach ([

@@ -24,6 +24,9 @@
     "Profile photo (Gravatar)": "Profilbild (Gravatar)",
     "Set the profile photo from Gravatar when one exists for any customer email. Existing photos are never replaced. Email hashes are sent to gravatar.com.": "Profilbild von Gravatar setzen, wenn für eine der Kunden-E-Mail-Adressen eines existiert. Vorhandene Bilder werden nie ersetzt. E-Mail-Hashes werden an gravatar.com übertragen.",
     "Profile photo added from Gravatar.": "Profilbild von Gravatar hinzugefügt.",
+    "Excluded Senders": "Ausgeschlossene Absender",
+    "Never enrich": "Nie anreichern",
+    "Email addresses or domains, one per line. Customers with such an address are never enriched — useful for suppliers, fulfillers and other partners whose mails cite your customers' order numbers.": "E-Mail-Adressen oder Domains, eine pro Zeile. Kunden mit einer solchen Adresse werden nie angereichert — sinnvoll für Lieferanten, Fulfiller und andere Partner, deren Mails die Bestellnummern Ihrer Kunden nennen.",
     "WooCommerce order :order is mentioned, but it was placed by :name — nothing was taken from it": "WooCommerce-Bestellung :order wird erwähnt, ist aber auf :name ausgestellt — daraus wurde nichts übernommen",
     "WooCommerce order :order is mentioned, but it could not be confirmed as this customer's — nothing was taken from it": "WooCommerce-Bestellung :order wird erwähnt, gehört aber nicht nachweislich zu diesem Kunden — daraus wurde nichts übernommen"
 }

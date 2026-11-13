@@ -108,6 +108,7 @@ class WooCommerceCustomerEnrichmentServiceProvider extends ServiceProvider
             }
             return [
                 WCCE_MODULE.'.pattern'        => \Option::get(WCCE_MODULE.'.pattern') ?: \Modules\WooCommerceCustomerEnrichment\Services\OrderNumberExtractor::DEFAULT_PATTERN,
+                WCCE_MODULE.'.excluded_senders' => \Option::get(WCCE_MODULE.'.excluded_senders', ''),
                 WCCE_MODULE.'.enrich_phone'   => \Option::get(WCCE_MODULE.'.enrich_phone', true),
                 WCCE_MODULE.'.enrich_email'   => \Option::get(WCCE_MODULE.'.enrich_email', true),
                 WCCE_MODULE.'.enrich_name'    => \Option::get(WCCE_MODULE.'.enrich_name', true),

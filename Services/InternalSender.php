@@ -56,6 +56,28 @@ class InternalSender
     }
 
     /**
+     * Parses the "never enrich these senders" setting: entries separated by
+     * new lines or commas, each a full address or a domain ("@partner.de"
+     * and "partner.de" both mean the domain).
+     *
+     * @return array ['addresses' => string[], 'hosts' => string[]]
+     */
+    public static function parseList($text)
+    {
+        $list = ['addresses' => [], 'hosts' => []];
+
+        foreach (preg_split('/[\s,;]+/', mb_strtolower((string) $text), -1, PREG_SPLIT_NO_EMPTY) as $entry) {
+            $entry = ltrim($entry, '@');
+            if ($entry === '') {
+                continue;
+            }
+            $list[strpos($entry, '@') === false ? 'hosts' : 'addresses'][] = $entry;
+        }
+
+        return $list;
+    }
+
+    /**
      * "https://www.Example-Shop.de/wp/" → "example-shop.de". A bare label
      * without a dot (e.g. "localhost" or a TLD) yields '' so it never matches.
      */

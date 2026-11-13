@@ -85,4 +85,22 @@ class InternalSenderTest extends TestCase
         $this->assertFalse(InternalSender::matches(['buyer@gmx.de'], [], []));
         $this->assertFalse(InternalSender::matches(['not-an-email'], self::OWN_ADDRESSES, self::OWN_HOSTS));
     }
+
+    // "Never enrich these senders" setting: one entry per line or comma,
+    // a full address or a domain.
+    public function testSenderListSplitsAddressesAndDomains()
+    {
+        $this->assertSame(
+            ['addresses' => ['sales@supplier-example.com'], 'hosts' => ['partner.de', 'fulfiller.com']],
+            InternalSender::parseList("Sales@Supplier-Example.com\n@partner.de, fulfiller.com\n\n  ")
+        );
+    }
+
+    public function testListedDomainMatchesItsAddresses()
+    {
+        $list = InternalSender::parseList('supplier-example.com');
+
+        $this->assertTrue(InternalSender::matches(['sales@supplier-example.com'], $list['addresses'], $list['hosts']));
+        $this->assertFalse(InternalSender::matches(['kunde@example.org'], $list['addresses'], $list['hosts']));
+    }
 }

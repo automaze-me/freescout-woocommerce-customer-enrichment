@@ -77,14 +77,16 @@ class EnrichCustomer implements ShouldQueue
             return;
         }
 
-        // ---- Never enrich the shop itself: the mailbox address, an alias, or
-        // any address on the shop's domain. Its automation mails (order alerts,
-        // seller notifications) cite other people's order numbers, so enriching
-        // that record piles strangers' contact data onto one profile.
+        // ---- Never enrich the shop itself (the mailbox address, an alias, or
+        // any address on the shop's domain) nor a sender the admin excluded
+        // (suppliers, fulfillers). Their mails cite other people's order
+        // numbers, so enriching them piles strangers' contact data onto one
+        // profile.
+        $excluded = InternalSender::parseList(\Option::get(WCCE_MODULE.'.excluded_senders', ''));
         if (InternalSender::matches(
             $customer->emails_cached->pluck('email')->all(),
-            self::ownAddresses(),
-            self::ownHosts($wc_mailbox)
+            array_merge(self::ownAddresses(), $excluded['addresses']),
+            array_merge(self::ownHosts($wc_mailbox), $excluded['hosts'])
         )) {
             return;
         }

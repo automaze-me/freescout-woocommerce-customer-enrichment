@@ -19,6 +19,8 @@ Configured under *Manage → Settings → Customer Enrichment*.
 
 **Order number pattern.** A regular expression (without delimiters, case-insensitive), with one capture group for the order number, applied to the subject and body of incoming messages. Left empty, the built-in default is used: it looks for a `#` or an order-related keyword (`Bestellung`, `Bestellnummer`, `Auftrag`, `Auftragsnummer`, `order`) immediately next to a run of 3–10 digits, so it matches things like `#12345` or `Bestellung 12345` without also matching bare numbers, dates, ZIP codes or phone numbers that happen to appear in a message. If your shop uses a different order numbering scheme — for example a plugin that prefixes order numbers with `WC-` — replace it with a custom pattern with one capture group around the part that should be looked up, e.g. `WC-(\d{4,8})`. The captured digits are used directly as the WooCommerce order **ID** (`GET /orders/<id>`), so a custom pattern must capture the real order ID — shops using plugins that show customers a sequential order number different from the underlying order ID are not supported.
 
+**Excluded senders.** Email addresses or domains (one per line) whose customers are never enriched. Put suppliers, fulfillers and other partners here whose mails cite your customers' order numbers, e.g. `orders@supplier.com` or `fulfiller.com`. Orders they cite are already protected by the ownership check described below; listing them also stops lookups by their own email and phone.
+
 **Profile Enrichment toggles.** Four independent switches, all **on by default**:
 
 - **Phone numbers** — add billing phone numbers from matched orders.
@@ -37,8 +39,9 @@ Enrichment runs automatically whenever a customer message arrives or an agent cr
 
   Someone who mentions an order number has not necessarily placed that order: a supplier replying to "Order #1234" is citing your customer's order. So an order found *only* through its number is used only when the billing last name on the order matches the customer's name (any part of it, ignoring case and umlaut spelling, so `Mustermann, Max` or `Haustechnik Mustermann` match an order by Max Mustermann). Otherwise nothing is taken from it, and the conversation gets one line item saying whose order it is ("WooCommerce order #1234 is mentioned, but it was placed by Max Mustermann — nothing was taken from it"). A customer without any name can't be checked, so number-only orders are never applied to them. Orders that the customer's own email or phone number also finds are always used.
 
-Two kinds of conversations are never enriched:
+These conversations are never enriched:
 
+- **Excluded senders** (see Settings).
 - **The shop itself.** If the customer record holds a mailbox address, one of its aliases, or any address on the shop's own domain (from the WooCommerce URL setting), the module does nothing. Such records collect the shop's automated mails — order alerts, seller notifications, monitoring — which cite *other people's* order numbers; enriching them would pile strangers' phone numbers and emails onto one profile, and later route those people's tickets to it.
 - **Conversations without WooCommerce credentials** for their mailbox (neither global nor per-mailbox).
 
